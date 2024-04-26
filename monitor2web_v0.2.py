@@ -715,7 +715,7 @@ def getOptionPrice(code):
         mkt = 9
     optprice = Exapi.get_instrument_bars(8, mkt, code, 0, 10)
 
-    return optprice[-1]['close']
+    return round(optprice[-1]['close'],4)
 
 if __name__ == '__main__':
 
