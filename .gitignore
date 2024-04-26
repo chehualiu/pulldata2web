@@ -32,6 +32,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+*bak.py
 
 # Installer logs
 pip-log.txt
@@ -106,6 +107,7 @@ env.bak/
 venv.bak/
 
 output/
+logs/
 
 # Spyder project settings
 .spyderproject

@@ -590,7 +590,7 @@ def myStrategy(data, gap_threshold, cutloss=-0.005, cutprofit=0.01):
 
 
 def drawAllCCBmin1A():
-    global backset, threshold_pct,bins,trade_rate,trendKline, cutloss, cutprofit, png_dict,trx_status
+    global backset, threshold_pct,bins,trade_rate,trendKline, cutloss, cutprofit, png_dict
 
     result =  {}
 
@@ -643,79 +643,44 @@ def drawAllCCBmin1A():
 
         df_single.loc[(df_single['ccbgap']>df_single['ccbgapm20']) & (df_single['ccbgap'].shift(1)<df_single['ccbgapm20'].shift(1)),'sig'] = 1  # (df_single['mark']>=0) &
         df_single.loc[(df_single['ccbgap']<df_single['ccbgapm20']) & (df_single['ccbgap'].shift(1)>df_single['ccbgapm20'].shift(1)),'sig'] = -1
-        # df_single.dropna(subset=['ccbgapm20'], inplace=True)
 
-        df_single[['trxOpen','trxClose', 'action', 'RET', 'curve','winpct', 'winpctMax', 'trxBars', 'remark']] = \
-            myStrategy(df_single, gap_threshold=gap_threshold, cutloss=-0.0050, cutprofit=0.010)
-
-        # calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
-        # calloptionname = png_dict[k].split('\n')[0].split('_')[1]
-        # putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
-        # putoptionname = png_dict[k].split('\n')[1].split('_')[1]
-
-        action = df_single['remark'].values[-1]
-        logger.info(k + ' action: ' + action)
-
-        if action == '多头开仓':
-            result[k] = {'Trx': '+C0P', 'direction': 1, 'options': png_dict[k]}
-        elif action in ['多头持仓','多头持仓忽略马上多转空']:
-            result[k] = {'Trx': 'C0P', 'direction': 1, 'options': png_dict[k]}
-        elif action == '多头卖出平仓':
-            result[k] = {'Trx': '-C0P', 'direction': 1, 'options': png_dict[k]}
-        elif action == '多头转空头':
-            result[k] = {'Trx': '-C+P', 'direction': -1, 'options': png_dict[k]}
-        elif action == '空头开仓':
-            result[k] = {'Trx': '+P0C', 'direction': -1, 'options': png_dict[k]}
-        elif action in ['空头持仓', '空头持仓忽略马上空转多']:
-            result[k] = {'Trx': 'P0C', 'direction': -1, 'options': png_dict[k]}
-        elif action == '空头卖出平仓':
-            trx_status[k] = 0
-            result[k] = {'Trx': '-P0C', 'direction': -1, 'options': png_dict[k]}
-        elif action == '空头转多头':
-            result[k] = {'Trx': '-P+C', 'direction': 1, 'options': png_dict[k]}
-            trx_status[k] = 1
+        if df_single['sig'].values[-1] == 1:    # etf上涨信号
+            print('#### ',k,'上涨信号')
+            calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
+            calloptionname = png_dict[k].split('\n')[0].split('_')[1]
+            if '购' not in calloptionname:
+                print('error call option', calloptioncode, calloptionname)
+                result[k] = {'Trx':'+C','direction': 1, 'code': 'wrong', 'name': 'wrong'}
+            else:
+                result[k] = {'Trx':'+C','direction':1, 'code':calloptioncode,'name':calloptionname}
+        elif df_single['sig'].values[-1] == -1:  # etf下跌信号
+            print('#### ', k, '下跌信号')
+            putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
+            putoptionname = png_dict[k].split('\n')[1].split('_')[1]
+            if '沽' not in putoptionname:
+                print('error call option', putoptioncode, putoptionname)
+                result[k] = {'Trx':'+P','direction': -1, 'code': 'wrong','name':'wrong'}
+            else:
+                result[k] = {'Trx':'+P','direction': -1, 'code': putoptioncode,'name':putoptionname}
         else:
-            print('invalid status:', )
-            result[k] = {'Trx': '', 'direction': 0, 'options': png_dict[k]}
-        # logger.info(json.dumps(result))
-
-        # if df_single['sig'].values[-1] == 1:    # etf上涨信号
-        #     print('#### ',k,'上涨信号')
-        #     calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
-        #     calloptionname = png_dict[k].split('\n')[0].split('_')[1]
-        #     if '购' not in calloptionname:
-        #         print('error call option', calloptioncode, calloptionname)
-        #         result[k] = {'Trx':'+C','direction': 1, 'code': 'wrong', 'name': 'wrong'}
-        #     else:
-        #         result[k] = {'Trx':'+C','direction':1, 'code':calloptioncode,'name':calloptionname}
-        # elif df_single['sig'].values[-1] == -1:  # etf下跌信号
-        #     print('#### ', k, '下跌信号')
-        #     putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
-        #     putoptionname = png_dict[k].split('\n')[1].split('_')[1]
-        #     if '沽' not in putoptionname:
-        #         print('error call option', putoptioncode, putoptionname)
-        #         result[k] = {'Trx':'+P','direction': -1, 'code': 'wrong','name':'wrong'}
-        #     else:
-        #         result[k] = {'Trx':'+P','direction': -1, 'code': putoptioncode,'name':putoptionname}
-        # else:
-        #     if df_single['up2'].values[-1] == 0:
-        #         calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
-        #         calloptionname = png_dict[k].split('\n')[0].split('_')[1]
-        #         if '购' not in calloptionname:
-        #             print('error call option', calloptioncode, calloptionname)
-        #             result[k] = {'Trx':'','direction': 1, 'code': 'wrong', 'name': 'wrong'}
-        #         else:
-        #             result[k] = {'Trx':'','direction': 1, 'code': calloptioncode, 'name': calloptionname}
-        #     elif df_single['dw2'].values[-1] == 0:
-        #         putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
-        #         putoptionname = png_dict[k].split('\n')[1].split('_')[1]
-        #         if '沽' not in putoptionname:
-        #             print('error call option', putoptioncode, putoptionname)
-        #             result[k] = {'Trx':'','direction': -1, 'code': 'wrong', 'name': 'wrong'}
-        #         else:
-        #             result[k] = {'Trx':'','direction': -1, 'code': putoptioncode, 'name': putoptionname}
-        #     else:
-        #         result[k] = {'Trx':'', 'direction': 0, 'code': 'NoTrend', 'name': 'NoTrend'}
+            if df_single['up2'].values[-1] == 0:
+                calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
+                calloptionname = png_dict[k].split('\n')[0].split('_')[1]
+                if '购' not in calloptionname:
+                    print('error call option', calloptioncode, calloptionname)
+                    result[k] = {'Trx':'','direction': 1, 'code': 'wrong', 'name': 'wrong'}
+                else:
+                    result[k] = {'Trx':'','direction': 1, 'code': calloptioncode, 'name': calloptionname}
+            elif df_single['dw2'].values[-1] == 0:
+                putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
+                putoptionname = png_dict[k].split('\n')[1].split('_')[1]
+                if '沽' not in putoptionname:
+                    print('error call option', putoptioncode, putoptionname)
+                    result[k] = {'Trx':'','direction': -1, 'code': 'wrong', 'name': 'wrong'}
+                else:
+                    result[k] = {'Trx':'','direction': -1, 'code': putoptioncode, 'name': putoptionname}
+            else:
+                result[k] = {'Trx':'', 'direction': 0, 'code': 'NoTrend', 'name': 'NoTrend'}
 
     data = {}
     data['time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
