@@ -651,37 +651,37 @@ def drawAllCCBmin1A():
             calloptionname = png_dict[k].split('\n')[0].split('_')[1]
             if '购' not in calloptionname:
                 print('error call option', calloptioncode, calloptionname)
-                result[k] = {'Trx':'+C','direction': 1, 'code': 'wrong', 'name': 'wrong'}
+                result[k] = {'Trx':'+C','direction': 1, 'code': 'wrong', 'name': 'wrong', 'close':0}
             else:
-                result[k] = {'Trx':'+C','direction':1, 'code':calloptioncode,'name':calloptionname}
+                result[k] = {'Trx':'+C','direction':1, 'code':calloptioncode,'name':calloptionname, 'close':getOptionPrice(calloptioncode)}
         elif df_single['sig'].values[-1] == -1:  # etf下跌信号
             print('#### ', k, '下跌信号')
             putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
             putoptionname = png_dict[k].split('\n')[1].split('_')[1]
             if '沽' not in putoptionname:
                 print('error call option', putoptioncode, putoptionname)
-                result[k] = {'Trx':'+P','direction': -1, 'code': 'wrong','name':'wrong'}
+                result[k] = {'Trx':'+P','direction': -1, 'code': 'wrong','name':'wrong','close':0}
             else:
-                result[k] = {'Trx':'+P','direction': -1, 'code': putoptioncode,'name':putoptionname}
+                result[k] = {'Trx':'+P','direction': -1, 'code': putoptioncode,'name':putoptionname, 'close':getOptionPrice(putoptioncode)}
         else:
             if df_single['up2'].values[-1] == 0:
                 calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
                 calloptionname = png_dict[k].split('\n')[0].split('_')[1]
                 if '购' not in calloptionname:
                     print('error call option', calloptioncode, calloptionname)
-                    result[k] = {'Trx':'','direction': 1, 'code': 'wrong', 'name': 'wrong'}
+                    result[k] = {'Trx':'','direction': 1, 'code': 'wrong', 'name': 'wrong','close':0}
                 else:
-                    result[k] = {'Trx':'','direction': 1, 'code': calloptioncode, 'name': calloptionname}
+                    result[k] = {'Trx':'','direction': 1, 'code': calloptioncode, 'name': calloptionname, 'close':getOptionPrice(calloptioncode)}
             elif df_single['dw2'].values[-1] == 0:
                 putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
                 putoptionname = png_dict[k].split('\n')[1].split('_')[1]
                 if '沽' not in putoptionname:
                     print('error call option', putoptioncode, putoptionname)
-                    result[k] = {'Trx':'','direction': -1, 'code': 'wrong', 'name': 'wrong'}
+                    result[k] = {'Trx':'','direction': -1, 'code': 'wrong', 'name': 'wrong','close':0}
                 else:
-                    result[k] = {'Trx':'','direction': -1, 'code': putoptioncode, 'name': putoptionname}
+                    result[k] = {'Trx':'','direction': -1, 'code': putoptioncode, 'name': putoptionname, 'close':getOptionPrice(putoptioncode)}
             else:
-                result[k] = {'Trx':'', 'direction': 0, 'code': 'NoTrend', 'name': 'NoTrend'}
+                result[k] = {'Trx':'', 'direction': 0, 'code': 'NoTrend', 'name': 'NoTrend', 'close':0}
 
     data = {}
     data['time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -706,6 +706,16 @@ def update_opt_list():
         logger.info(png_dict)
     # except:
     #     print('option list logic failed')
+
+def getOptionPrice(code):
+    global Exapi
+    if code[0] == '1':
+        mkt = 8
+    elif code[0] == '9':
+        mkt = 9
+    optprice = Exapi.get_instrument_bars(8, mkt, code, 0, 10)
+
+    return optprice[-1]['close']
 
 if __name__ == '__main__':
 
