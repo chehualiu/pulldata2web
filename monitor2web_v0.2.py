@@ -1,5 +1,5 @@
 import json, os,re,datetime
-import warnings
+import warnings,sys
 import time, requests
 import pandas as pd
 import configparser
@@ -48,6 +48,10 @@ def run_schedule():
 
 def update_data():
     global data
+    currenttime = datetime.datetime.now().strftime('%H%M')
+    if currenttime>'1130' or currenttime<'1300':
+        logger.info('waiting...')
+        return
     data = drawAllCCBmin1A()
     # print(data)
     logger.info(data)
@@ -706,6 +710,12 @@ def update_opt_list():
         logger.info(png_dict)
     # except:
     #     print('option list logic failed')
+    currenttime = time.strftime("%H%M", time.localtime())
+    if currenttime<'0920' or currenttime>'1508':
+        logger.info('exiting...')
+        api.close()
+        Exapi.close()
+        sys.exit()
 
 def getOptionPrice(code):
     global Exapi
