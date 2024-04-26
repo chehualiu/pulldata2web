@@ -49,7 +49,8 @@ def run_schedule():
 def update_data():
     global data
     data = drawAllCCBmin1A()
-    print(data)
+    # print(data)
+    logger.info(data)
 
 app = Flask(__name__)
 data = {}
@@ -696,12 +697,13 @@ def update_opt_list():
     for k,v in png_dict_new.items():
         if '流动性' in v:
             update = False
-            print('option list NOT updated')
+            logger.info('option list NOT updated')
+            logger.info(png_dict)
             break
     if update:
-        print('option list updated')
+        logger.info('option list updated to latest')
         png_dict  = png_dict_new
-        print('option list:', png_dict)
+        logger.info(png_dict)
     # except:
     #     print('option list logic failed')
 
