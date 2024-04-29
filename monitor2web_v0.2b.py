@@ -615,6 +615,8 @@ def drawAllCCBmin1A():
         df_single['close'] = df_single['close'].ffill()
         df_single['cm5'] = df_single['close'].rolling(5).mean()
         df_single['cm20'] = df_single['close'].rolling(20).mean()
+        df_single['cm25'] = df_single['close'].rolling(25).mean()
+        df_single['direction'] = (df_single['close']>df_single['close'].shift(20)).map({True:1,False:-1})
         df_single['cmgap'] = (df_single['cm5'] - df_single['cm20'])/df_single['cm5']
 
         df_single['gap'] = (df_single['close'] - df_single['cm20'])/df_single['close']*100
@@ -649,43 +651,45 @@ def drawAllCCBmin1A():
         df_single.loc[(df_single['ccbgap']>df_single['ccbgapm20']) & (df_single['ccbgap'].shift(1)<df_single['ccbgapm20'].shift(1)),'sig'] = 1  # (df_single['mark']>=0) &
         df_single.loc[(df_single['ccbgap']<df_single['ccbgapm20']) & (df_single['ccbgap'].shift(1)>df_single['ccbgapm20'].shift(1)),'sig'] = -1
 
-        if df_single['sig'].values[-1] == 1:    # etf上涨信号
+        direction = df_single['direction'].values[-1]
+
+        if df_single['sig'].values[-1] == 1 and direction==1:    # etf上涨信号
             print('#### ',k,'上涨信号')
             calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
             calloptionname = png_dict[k].split('\n')[0].split('_')[1]
             if '购' not in calloptionname:
                 print('error call option', calloptioncode, calloptionname)
-                result[k] = {'Trx':'+C','direction': 1, 'code': 'wrong', 'name': 'wrong', 'close':0}
+                result[k] = {'Trx':'+C','direction': direction, 'code': 'wrong', 'name': 'wrong', 'close':0}
             else:
-                result[k] = {'Trx':'+C','direction':1, 'code':calloptioncode,'name':calloptionname, 'close':getOptionPrice(calloptioncode)}
-        elif df_single['sig'].values[-1] == -1:  # etf下跌信号
+                result[k] = {'Trx':'+C','direction':direction, 'code':calloptioncode,'name':calloptionname, 'close':getOptionPrice(calloptioncode)}
+        elif df_single['sig'].values[-1] == -1 and direction==1:  # etf下跌信号
             print('#### ', k, '下跌信号')
             putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
             putoptionname = png_dict[k].split('\n')[1].split('_')[1]
             if '沽' not in putoptionname:
                 print('error call option', putoptioncode, putoptionname)
-                result[k] = {'Trx':'+P','direction': -1, 'code': 'wrong','name':'wrong','close':0}
+                result[k] = {'Trx':'+P','direction': direction, 'code': 'wrong','name':'wrong','close':0}
             else:
-                result[k] = {'Trx':'+P','direction': -1, 'code': putoptioncode,'name':putoptionname, 'close':getOptionPrice(putoptioncode)}
+                result[k] = {'Trx':'+P','direction': direction, 'code': putoptioncode,'name':putoptionname, 'close':getOptionPrice(putoptioncode)}
         else:
             if df_single['up2'].values[-1] == 0:
                 calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
                 calloptionname = png_dict[k].split('\n')[0].split('_')[1]
                 if '购' not in calloptionname:
                     print('error call option', calloptioncode, calloptionname)
-                    result[k] = {'Trx':'','direction': 1, 'code': 'wrong', 'name': 'wrong','close':0}
+                    result[k] = {'Trx':'','direction': direction, 'code': 'wrong', 'name': 'wrong','close':0}
                 else:
-                    result[k] = {'Trx':'','direction': 1, 'code': calloptioncode, 'name': calloptionname, 'close':getOptionPrice(calloptioncode)}
+                    result[k] = {'Trx':'','direction': direction, 'code': calloptioncode, 'name': calloptionname, 'close':getOptionPrice(calloptioncode)}
             elif df_single['dw2'].values[-1] == 0:
                 putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
                 putoptionname = png_dict[k].split('\n')[1].split('_')[1]
                 if '沽' not in putoptionname:
                     print('error call option', putoptioncode, putoptionname)
-                    result[k] = {'Trx':'','direction': -1, 'code': 'wrong', 'name': 'wrong','close':0}
+                    result[k] = {'Trx':'','direction': direction, 'code': 'wrong', 'name': 'wrong','close':0}
                 else:
-                    result[k] = {'Trx':'','direction': -1, 'code': putoptioncode, 'name': putoptionname, 'close':getOptionPrice(putoptioncode)}
+                    result[k] = {'Trx':'','direction': direction, 'code': putoptioncode, 'name': putoptionname, 'close':getOptionPrice(putoptioncode)}
             else:
-                result[k] = {'Trx':'', 'direction': 0, 'code': 'NoTrend', 'name': 'NoTrend', 'close':0}
+                result[k] = {'Trx':'', 'direction': direction, 'code': 'NoTrend', 'name': 'NoTrend', 'close':0}
 
     data = {}
     data['time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -711,8 +715,8 @@ def update_opt_list():
     # except:
     #     print('option list logic failed')
     currenttime = time.strftime("%H%M", time.localtime())
-    if currenttime<'0920' or currenttime>'1508':
-        logger.info('exiting...')
+    if currenttime<'0920' or currenttime>'1408':
+        logger.info(f'{currenttime} exiting...')
         api.close()
         Exapi.close()
         sys.exit()

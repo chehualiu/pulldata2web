@@ -49,7 +49,7 @@ def run_schedule():
 def update_data():
     global data
     currenttime = datetime.datetime.now().strftime('%H%M')
-    if currenttime>'1130' or currenttime<'1300':
+    if currenttime>'1130' and currenttime<'1300':
         logger.info('waiting...')
         return
     data = drawAllCCBmin1A()
@@ -597,6 +597,7 @@ def myStrategy(data, gap_threshold, cutloss=-0.005, cutprofit=0.01):
 def drawAllCCBmin1A():
     global backset, threshold_pct,bins,trade_rate,trendKline, cutloss, cutprofit, png_dict
 
+    advise = ['多头开仓','多头平仓','平多开空','平空开多','空头开仓','空头平仓','空仓等待']
     result =  {}
 
     periodkey = '1分钟k线'
@@ -604,6 +605,14 @@ def drawAllCCBmin1A():
     klines=int(kline_qty[periodkey])
 
     for k,v in etf_dict.items():
+
+        calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
+        calloptionname = png_dict[k].split('\n')[0].split('_')[1]
+        putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
+        putoptionname = png_dict[k].split('\n')[1].split('_')[1]
+        calloptionprice = getOptionPrice(calloptioncode)
+        putoptionprice = getOptionPrice(putoptioncode)
+
         df_single = getSingleCCBData(k,period,backset, klines)
         if len(df_single) == 0:
             continue
@@ -616,7 +625,7 @@ def drawAllCCBmin1A():
         df_single['cm5'] = df_single['close'].rolling(5).mean()
         df_single['cm20'] = df_single['close'].rolling(20).mean()
         df_single['cm25'] = df_single['close'].rolling(25).mean()
-        df_single['direction'] = (df_single['close']>df_single['close'].shift(20)).map({True:1,False:-1})
+
         df_single['cmgap'] = (df_single['cm5'] - df_single['cm20'])/df_single['cm5']
 
         df_single['gap'] = (df_single['close'] - df_single['cm20'])/df_single['close']*100
@@ -643,7 +652,7 @@ def drawAllCCBmin1A():
         df_single['ccbllv60'] = df_single['ccbl'].rolling(60).min()
         df_single['ccbcp60'] = df_single.apply(lambda x: (x['ccb']-x['ccbllv60'])/(x['ccbhhv60']-x['ccbllv60']), axis=1)
         df_single['ccbgap'] = df_single['ccp60']-df_single['ccbcp60']
-        # df_single['ccbgap'] = df_single['cmgap']-df_single['ccbmgap']
+
         df_single['ccbgapm20'] = df_single['ccbgap'].rolling(20).mean()
         df_single.loc[(df_single['ccbgap']>df_single['ccbgapm20']) & (df_single['mark']>=0),'up2'] = 0  # (df_single['mark']>=0) &
         df_single.loc[(df_single['ccbgap']<df_single['ccbgapm20']) & (df_single['mark']<=0),'dw2'] = 0
@@ -651,43 +660,19 @@ def drawAllCCBmin1A():
         df_single.loc[(df_single['ccbgap']>df_single['ccbgapm20']) & (df_single['ccbgap'].shift(1)<df_single['ccbgapm20'].shift(1)),'sig'] = 1  # (df_single['mark']>=0) &
         df_single.loc[(df_single['ccbgap']<df_single['ccbgapm20']) & (df_single['ccbgap'].shift(1)>df_single['ccbgapm20'].shift(1)),'sig'] = -1
 
+        df_single['direction'] = (df_single['close']>df_single['close'].shift(20)).map({True:1,False:-1})
         direction = df_single['direction'].values[-1]
-
         if df_single['sig'].values[-1] == 1 and direction==1:    # etf上涨信号
-            print('#### ',k,'上涨信号')
-            calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
-            calloptionname = png_dict[k].split('\n')[0].split('_')[1]
-            if '购' not in calloptionname:
-                print('error call option', calloptioncode, calloptionname)
-                result[k] = {'Trx':'+C','direction': direction, 'code': 'wrong', 'name': 'wrong', 'close':0}
-            else:
-                result[k] = {'Trx':'+C','direction':direction, 'code':calloptioncode,'name':calloptionname, 'close':getOptionPrice(calloptioncode)}
-        elif df_single['sig'].values[-1] == -1 and direction==1:  # etf下跌信号
-            print('#### ', k, '下跌信号')
-            putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
-            putoptionname = png_dict[k].split('\n')[1].split('_')[1]
-            if '沽' not in putoptionname:
-                print('error call option', putoptioncode, putoptionname)
-                result[k] = {'Trx':'+P','direction': direction, 'code': 'wrong','name':'wrong','close':0}
-            else:
-                result[k] = {'Trx':'+P','direction': direction, 'code': putoptioncode,'name':putoptionname, 'close':getOptionPrice(putoptioncode)}
+            print(f'#### {k} 上涨信号, 买入{calloptioncode} {calloptionname}')
+            result[k] = {'Trx':'+C','direction':direction, 'code':calloptioncode,'name':calloptionname, 'close':calloptionprice}
+        elif df_single['sig'].values[-1] == -1 and direction==-1:  # etf下跌信号
+            print(f'#### {k} 下跌信号, 买入{putoptioncode} {putoptionname}')
+            result[k] = {'Trx':'+P','direction': direction, 'code': putoptioncode,'name':putoptionname, 'close':putoptionprice}
         else:
             if df_single['up2'].values[-1] == 0:
-                calloptioncode = png_dict[k].split('\n')[0].split('_')[0][3:]
-                calloptionname = png_dict[k].split('\n')[0].split('_')[1]
-                if '购' not in calloptionname:
-                    print('error call option', calloptioncode, calloptionname)
-                    result[k] = {'Trx':'','direction': direction, 'code': 'wrong', 'name': 'wrong','close':0}
-                else:
-                    result[k] = {'Trx':'','direction': direction, 'code': calloptioncode, 'name': calloptionname, 'close':getOptionPrice(calloptioncode)}
+                result[k] = {'Trx':'','direction': direction, 'code': calloptioncode, 'name': calloptionname, 'close':calloptionprice}
             elif df_single['dw2'].values[-1] == 0:
-                putoptioncode = png_dict[k].split('\n')[1].split('_')[0][3:]
-                putoptionname = png_dict[k].split('\n')[1].split('_')[1]
-                if '沽' not in putoptionname:
-                    print('error call option', putoptioncode, putoptionname)
-                    result[k] = {'Trx':'','direction': direction, 'code': 'wrong', 'name': 'wrong','close':0}
-                else:
-                    result[k] = {'Trx':'','direction': direction, 'code': putoptioncode, 'name': putoptionname, 'close':getOptionPrice(putoptioncode)}
+                result[k] = {'Trx':'','direction': direction, 'code': putoptioncode, 'name': putoptionname, 'close':putoptionprice}
             else:
                 result[k] = {'Trx':'', 'direction': direction, 'code': 'NoTrend', 'name': 'NoTrend', 'close':0}
 
@@ -715,7 +700,7 @@ def update_opt_list():
     # except:
     #     print('option list logic failed')
     currenttime = time.strftime("%H%M", time.localtime())
-    if currenttime<'0920' or currenttime>'1408':
+    if currenttime<'0920' or currenttime>'1908':
         logger.info(f'{currenttime} exiting...')
         api.close()
         Exapi.close()

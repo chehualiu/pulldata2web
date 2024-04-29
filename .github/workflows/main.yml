@@ -21,11 +21,11 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build Windows EXE
-      run: pyinstaller --onefile monitor2web_v0.2.py --name="monitor2web_v0.2.exe" --distpath="D:\build"
+      run: pyinstaller --onefile monitor2web_v0.3.py --name="monitor2web_v0.3.exe" --distpath="D:\build"
 
     - name: (Upload) generated file
       uses: actions/upload-artifact@v4
       with:
-        name: monitor2web_v0.2.exe
+        name: monitor2web_v0.3.exe
         path: D:\build\
         overwrite: true
