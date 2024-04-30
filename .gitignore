@@ -108,6 +108,7 @@ venv.bak/
 
 output/
 logs/
+history/
 
 # Spyder project settings
 .spyderproject
@@ -133,5 +134,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-monitor2web_v0.2b.py
-monitor2web_v0.1.py
+

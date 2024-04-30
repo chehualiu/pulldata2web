@@ -661,7 +661,7 @@ def drawAllCCBmin1A():
         df_single.loc[(df_single['ccbgap']<df_single['ccbgapm20']) & (df_single['ccbgap'].shift(1)>df_single['ccbgapm20'].shift(1)),'sig'] = -1
 
         df_single['direction'] = (df_single['close']>df_single['close'].shift(20)).map({True:1,False:-1})
-        direction = df_single['direction'].values[-1]
+        direction = int(df_single['direction'].values[-1])
         if df_single['sig'].values[-1] == 1 and direction==1:    # etf上涨信号
             print(f'#### {k} 上涨信号, 买入{calloptioncode} {calloptionname}')
             result[k] = {'Trx':'+C','direction':direction, 'code':calloptioncode,'name':calloptionname, 'close':calloptionprice}
@@ -774,7 +774,7 @@ if __name__ == '__main__':
     schedule_thread.daemon = True
     schedule_thread.start()
 
-    app.run()
+    app.run(debug=True)
 
     api.close()
     Exapi.close()
