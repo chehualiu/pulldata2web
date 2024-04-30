@@ -774,7 +774,7 @@ if __name__ == '__main__':
     schedule_thread.daemon = True
     schedule_thread.start()
 
-    app.run(debug=True)
+    app.run(debug=False)
 
     api.close()
     Exapi.close()
